@@ -24,18 +24,18 @@ func (c *Client) Close() error {
 	return nil
 }
 
-// Handler tcp server handler impl
-type Handler struct {
+// TestHandler tcp server handler impl
+type TestHandler struct {
 	activeConn sync.Map
 	closing    atomic.Bool
 }
 
-func NewHandler() *Handler {
-	return &Handler{}
+func NewTestHandler() *TestHandler {
+	return &TestHandler{}
 }
 
 // Handle concurrently handle each conn
-func (h *Handler) Handle(ctx context.Context, conn net.Conn) {
+func (h *TestHandler) Handle(ctx context.Context, conn net.Conn) {
 	if h.closing.Get() {
 		_ = conn.Close()
 	}
@@ -64,7 +64,7 @@ func (h *Handler) Handle(ctx context.Context, conn net.Conn) {
 	}
 }
 
-func (h *Handler) Close() error {
+func (h *TestHandler) Close() error {
 	zap.S().Info("handler is shutting down...")
 	h.closing.Set(true)
 	h.activeConn.Range(func(key, value any) bool {

@@ -35,7 +35,7 @@ func main() {
 
 	// init tcp server
 	tcpServer := tcp.NewServer(fmt.Sprintf("%s:%d", config.Config.Addr, config.Config.Port))
-	if err = tcpServer.ListenAndServeWithSignal(tcp.NewHandler()); err != nil {
+	if err = tcpServer.ListenAndServeWithSignal(tcp.NewTestHandler()); err != nil {
 		zap.S().Fatalf("cannot init tcp server")
 	}
 }

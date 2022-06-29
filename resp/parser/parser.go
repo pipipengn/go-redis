@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-type Payload struct {
+type DataStream struct {
 	Data resp.Reply
 	Err  error
 }
@@ -29,14 +29,15 @@ func (r *readState) finished() bool {
 	return r.expectArgsCount > 0 && r.expectArgsCount == len(r.args)
 }
 
-func ParseStream(conn io.Reader) <-chan *Payload {
-	ch := make(chan *Payload)
+// ParseStream tcp layer call
+func ParseStream(conn io.Reader) <-chan *DataStream {
+	ch := make(chan *DataStream)
 	go parse(conn, ch)
 	return ch
 }
 
 // concurrent call
-func parse(conn io.Reader, ch chan *Payload) {
+func parse(conn io.Reader, ch chan *DataStream) {
 	defer func() {
 		if err := recover(); err != nil {
 			zap.S().Error(string(debug.Stack()))
@@ -49,11 +50,11 @@ func parse(conn io.Reader, ch chan *Payload) {
 		msg, isIOErr, err := readLine(bufReader, &state)
 		if err != nil {
 			if isIOErr {
-				ch <- &Payload{Err: err}
+				ch <- &DataStream{Err: err}
 				close(ch)
 				return
 			}
-			ch <- &Payload{Err: err}
+			ch <- &DataStream{Err: err}
 			state = readState{}
 			continue
 		}
@@ -63,35 +64,35 @@ func parse(conn io.Reader, ch chan *Payload) {
 			switch msg[0] {
 			case '*':
 				if err := parseMultiBulkHeader(msg, &state); err != nil {
-					ch <- &Payload{Err: err}
+					ch <- &DataStream{Err: err}
 					state = readState{}
 					continue
 				}
 				if state.expectArgsCount == 0 {
-					ch <- &Payload{Data: reply.NewEmptyMultiBulkReply()}
+					ch <- &DataStream{Data: reply.NewEmptyMultiBulkReply()}
 					state = readState{}
 					continue
 				}
 			case '$':
 				if err := parseBulkHeader(msg, &state); err != nil {
-					ch <- &Payload{Err: err}
+					ch <- &DataStream{Err: err}
 					state = readState{}
 					continue
 				}
 				if state.bulkLen == -1 {
-					ch <- &Payload{Data: reply.NewEmptyBulkReply()}
+					ch <- &DataStream{Data: reply.NewEmptyBulkReply()}
 					state = readState{}
 					continue
 				}
 			case '+', '-', ':':
 				singleLineReply, err := parseSingleLineReply(msg)
-				ch <- &Payload{Data: singleLineReply, Err: err}
+				ch <- &DataStream{Data: singleLineReply, Err: err}
 				state = readState{}
 				continue
 			}
 		} else {
 			if err := readBody(msg, &state); err != nil {
-				ch <- &Payload{Err: err}
+				ch <- &DataStream{Err: err}
 				state = readState{}
 				continue
 			}
@@ -103,7 +104,7 @@ func parse(conn io.Reader, ch chan *Payload) {
 					result = reply.NewBulkReply(state.args[0])
 				}
 
-				ch <- &Payload{Data: result}
+				ch <- &DataStream{Data: result}
 				state = readState{}
 			}
 		}
@@ -186,7 +187,7 @@ func parseSingleLineReply(msg []byte) (resp.Reply, error) {
 	case '+':
 		result = reply.NewStatusReply(s[1:])
 	case '-':
-		result = reply.NewCustomeErrReply(s[1:])
+		result = reply.NewErrReply(s[1:])
 	case ':':
 		val, err := strconv.Atoi(s[1:])
 		if err != nil {
