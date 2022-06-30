@@ -1,8 +1,8 @@
-package resp
+package resphandler
 
 import (
 	"context"
-	"go-redis/database"
+	"go-redis/db/database"
 	"go-redis/resp/connection"
 	"go-redis/resp/parser"
 	"go-redis/resp/reply"
@@ -14,22 +14,11 @@ import (
 	"sync"
 )
 
-type Connection interface {
-	Write([]byte) error
-	GetDBIndex() int
-	SelectDB(int)
-}
-
-type Reply interface {
-	ToBytes() []byte
-}
-
-type ErrorReply interface {
-	Error() string
-	ToBytes() []byte
-}
-
 // ================================================================================
+
+type Config struct {
+	Database database.Interface
+}
 
 type Handler struct {
 	activeConn sync.Map
@@ -37,8 +26,8 @@ type Handler struct {
 	db         database.Interface
 }
 
-func NewHandler() *Handler {
-	return &Handler{}
+func NewHandlerWithDB(config *Config) *Handler {
+	return &Handler{db: config.Database}
 }
 
 func (h *Handler) Handle(ctx context.Context, conn net.Conn) {
@@ -57,14 +46,14 @@ func (h *Handler) Handle(ctx context.Context, conn net.Conn) {
 			if stream.Err == io.EOF || stream.Err == io.ErrUnexpectedEOF ||
 				strings.Contains(stream.Err.Error(), "use of closed network connection") {
 				h.closeClient(client)
-				zap.S().Info("connection closed" + client.RemoteAddr().String())
+				zap.S().Infof("connection closed: %s", client.RemoteAddr().String())
 				return
 			}
 			// protocol error
 			errReply := reply.NewErrReply(stream.Err.Error())
 			if err := client.Write(errReply.ToBytes()); err != nil {
 				h.closeClient(client)
-				zap.S().Info("connection closed" + client.RemoteAddr().String())
+				zap.S().Infof("connection closed: %s", client.RemoteAddr().String())
 				return
 			}
 			continue

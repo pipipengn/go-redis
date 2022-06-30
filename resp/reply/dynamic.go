@@ -2,7 +2,7 @@ package reply
 
 import (
 	"bytes"
-	"go-redis/resp"
+	"go-redis/resp/interface"
 	"strconv"
 )
 
@@ -92,6 +92,6 @@ func (r *ErrReply) ToBytes() []byte {
 	return []byte("-" + r.Status + CRLF)
 }
 
-func IsErrorReply(reply resp.Reply) bool {
+func IsErrorReply(reply respinterface.Reply) bool {
 	return reply.ToBytes()[0] == '-'
 }

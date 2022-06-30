@@ -3,7 +3,7 @@ package parser
 import (
 	"bufio"
 	"errors"
-	"go-redis/resp"
+	"go-redis/resp/interface"
 	"go-redis/resp/reply"
 	"go.uber.org/zap"
 	"io"
@@ -13,7 +13,7 @@ import (
 )
 
 type DataStream struct {
-	Data resp.Reply
+	Data respinterface.Reply
 	Err  error
 }
 
@@ -97,7 +97,7 @@ func parse(conn io.Reader, ch chan *DataStream) {
 				continue
 			}
 			if state.finished() {
-				var result resp.Reply
+				var result respinterface.Reply
 				if state.msgType == '*' {
 					result = reply.NewMultiBulkReply(state.args)
 				} else if state.msgType == '$' {
@@ -121,7 +121,7 @@ func readLine(reader *bufio.Reader, state *readState) ([]byte, bool, error) {
 			return nil, true, err
 		}
 		if len(msg) == 0 || msg[len(msg)-2] != '\r' {
-			return nil, false, errors.New("protocol error: " + string(msg))
+			return nil, false, errors.New("protocol error1: " + string(msg))
 		}
 	} else {
 		msg = make([]byte, state.bulkLen+2)
@@ -129,7 +129,7 @@ func readLine(reader *bufio.Reader, state *readState) ([]byte, bool, error) {
 			return nil, true, err
 		}
 		if len(msg) == 0 || msg[len(msg)-2] != '\r' || msg[len(msg)-1] != '\n' {
-			return nil, false, errors.New("protocol error: " + string(msg))
+			return nil, false, errors.New("protocol error2: " + string(msg))
 		}
 		state.bulkLen = 0
 	}
@@ -141,7 +141,7 @@ func readLine(reader *bufio.Reader, state *readState) ([]byte, bool, error) {
 func parseMultiBulkHeader(msg []byte, state *readState) error {
 	expectedLine, err := strconv.Atoi(string(msg[1 : len(msg)-2]))
 	if err != nil {
-		return errors.New("protocol error: " + string(msg))
+		return errors.New("protocol error3: " + string(msg))
 	}
 
 	if expectedLine == 0 {
@@ -154,7 +154,7 @@ func parseMultiBulkHeader(msg []byte, state *readState) error {
 		state.expectArgsCount = expectedLine
 		return nil
 	} else {
-		return errors.New("protocol error: " + string(msg))
+		return errors.New("protocol error4: " + string(msg))
 	}
 }
 
@@ -163,7 +163,7 @@ func parseBulkHeader(msg []byte, state *readState) error {
 	var err error
 	state.bulkLen, err = strconv.Atoi(string(msg[1 : len(msg)-2]))
 	if err != nil {
-		return errors.New("protocol error: " + string(msg))
+		return errors.New("protocol error5: " + string(msg))
 	}
 
 	if state.bulkLen == -1 {
@@ -175,14 +175,14 @@ func parseBulkHeader(msg []byte, state *readState) error {
 		state.args = make([][]byte, 0, 1)
 		return nil
 	} else {
-		return errors.New("protocol error: " + string(msg))
+		return errors.New("protocol error6: " + string(msg))
 	}
 }
 
 // +OK\r\n  -err\r\n  :4\r\n
-func parseSingleLineReply(msg []byte) (resp.Reply, error) {
+func parseSingleLineReply(msg []byte) (respinterface.Reply, error) {
 	s := strings.TrimSuffix(string(msg), "\r\n")
-	var result resp.Reply
+	var result respinterface.Reply
 	switch msg[0] {
 	case '+':
 		result = reply.NewStatusReply(s[1:])
@@ -191,7 +191,7 @@ func parseSingleLineReply(msg []byte) (resp.Reply, error) {
 	case ':':
 		val, err := strconv.Atoi(s[1:])
 		if err != nil {
-			return nil, errors.New("protocol error: " + string(msg))
+			return nil, errors.New("protocol error7: " + string(msg))
 		}
 		result = reply.NewIntReply(val)
 	}
@@ -206,7 +206,7 @@ func readBody(msg []byte, state *readState) error {
 	if line[0] == '$' {
 		var err error
 		if state.bulkLen, err = strconv.Atoi(string(line[1:])); err != nil {
-			return errors.New("protocol error: " + string(msg))
+			return errors.New("protocol error8: " + string(msg))
 		}
 		if state.bulkLen <= 0 {
 			state.args = append(state.args, []byte{})
