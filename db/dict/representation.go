@@ -1,6 +1,6 @@
 package dict
 
-type Dict interface {
+type Interface interface {
 	Get(key string) (val any, exists bool)
 	Len() int
 	Set(key string, val any) (rowAffected int)
@@ -12,4 +12,8 @@ type Dict interface {
 	RandomKeys(limit int) []string
 	RandomDistinctKeys(limit int) []string
 	Clear()
+}
+
+type DataEntity struct {
+	Data any
 }

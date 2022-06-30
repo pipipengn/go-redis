@@ -12,7 +12,7 @@ func NewTestDB() *TestDB {
 	return &TestDB{}
 }
 
-func (t *TestDB) Exec(client respinterface.Connection, args CmdLine) respinterface.Reply {
+func (t *TestDB) Exec(client respinterface.Connection, args [][]byte) respinterface.Reply {
 	return reply.NewMultiBulkReply(args)
 }
 
