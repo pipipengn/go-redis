@@ -1,11 +1,28 @@
 package database
 
 import (
-	"go-redis/db/dict"
+	"go-redis/core/dict"
 	respinterface "go-redis/resp/interface"
 	"go-redis/resp/reply"
 	"strings"
 )
+
+var cmdTable = make(map[string]*command)
+
+type command struct {
+	executor ExecFunc
+	argNum   int
+}
+
+func RegisterCommand(name string, executor ExecFunc, argNum int) {
+	name = strings.ToLower(name)
+	cmdTable[name] = &command{
+		executor: executor,
+		argNum:   argNum,
+	}
+}
+
+// ========================================================================================
 
 type DB struct {
 	index int
@@ -27,18 +44,7 @@ func (db *DB) Exec(client respinterface.Connection, cmd [][]byte) respinterface.
 	if !validateArgNUm(command.argNum, cmd) {
 		return reply.NewArgNumErrReply(action)
 	}
-	// TODO ExecFunc Impl
 	return command.executor(db, cmd[1:])
-}
-
-func (db *DB) Close() {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (db *DB) AfterClientClose(client respinterface.Connection) {
-	//TODO implement me
-	panic("implement me")
 }
 
 // EXISTS k1 k2 k3 = -2
@@ -53,7 +59,7 @@ func validateArgNUm(argNum int, cmd [][]byte) bool {
 
 // ===================
 
-func (db *DB) Get(key string) (*dict.DataEntity, bool) {
+func (db *DB) GetEntity(key string) (*dict.DataEntity, bool) {
 	raw, ok := db.dict.Get(key)
 	if !ok {
 		return nil, false
@@ -61,16 +67,16 @@ func (db *DB) Get(key string) (*dict.DataEntity, bool) {
 	return &dict.DataEntity{Data: raw}, true
 }
 
-func (db *DB) SetEntity(key string, entity *dict.DataEntity) int {
-	return db.dict.Set(key, entity)
+func (db *DB) SetEntity(key string, entity *dict.DataEntity) (rowAffected int) {
+	return db.dict.Set(key, entity.Data)
 }
 
-func (db *DB) SetIfExists(key string, entity *dict.DataEntity) int {
-	return db.dict.SetIfExists(key, entity)
+func (db *DB) SetIfExists(key string, entity *dict.DataEntity) (rowAffected int) {
+	return db.dict.SetIfExists(key, entity.Data)
 }
 
-func (db *DB) SetIfAbsent(key string, entity *dict.DataEntity) int {
-	return db.dict.SetIfAbsent(key, entity)
+func (db *DB) SetIfAbsent(key string, entity *dict.DataEntity) (rowAffected int) {
+	return db.dict.SetIfAbsent(key, entity.Data)
 }
 
 func (db *DB) Remove(key string) {

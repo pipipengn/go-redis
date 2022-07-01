@@ -29,11 +29,11 @@ type Config struct {
 type Handler struct {
 	activeConn sync.Map
 	closing    atomic.Bool
-	db         DatabaseInterface
+	database   DatabaseInterface
 }
 
-func NewHandlerWithDB(config *Config) *Handler {
-	return &Handler{db: config.Database}
+func NewHandlerWithDatabase(config *Config) *Handler {
+	return &Handler{database: config.Database}
 }
 
 func (h *Handler) Handle(ctx context.Context, conn net.Conn) {
@@ -74,7 +74,7 @@ func (h *Handler) Handle(ctx context.Context, conn net.Conn) {
 			zap.S().Error("require multi bulk reply")
 			continue
 		}
-		execReply := h.db.Exec(client, multiBulkReply.Args)
+		execReply := h.database.Exec(client, multiBulkReply.Args)
 		if execReply != nil {
 			_ = client.Write(execReply.ToBytes())
 		} else {
@@ -86,7 +86,7 @@ func (h *Handler) Handle(ctx context.Context, conn net.Conn) {
 // close one client
 func (h *Handler) closeClient(client *connection.Connection) {
 	_ = client.Close()
-	h.db.AfterClientClose(client)
+	h.database.AfterClientClose(client)
 	h.activeConn.Delete(client)
 }
 
@@ -99,6 +99,6 @@ func (h *Handler) Close() error {
 		_ = client.Close()
 		return true
 	})
-	h.db.Close()
+	h.database.Close()
 	return nil
 }

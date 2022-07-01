@@ -24,11 +24,7 @@ func (dict *SyncDict) Len() int {
 }
 
 func (dict *SyncDict) Set(key string, val any) (rowAffected int) {
-	_, existed := dict.m.Load(key)
 	dict.m.Store(key, val)
-	if existed {
-		return 0
-	}
 	return 1
 }
 

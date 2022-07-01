@@ -48,8 +48,8 @@ func parse(src io.Reader) *ServerConfig {
 			continue
 		}
 		pivot := strings.IndexAny(line, " ")
-		if pivot > 0 && pivot < len(line)-1 { // separator found
-			key := line[0:pivot]
+		if pivot > 0 && pivot < len(line)-1 {
+			key := line[:pivot]
 			value := strings.Trim(line[pivot+1:], " ")
 			rawMap[strings.ToLower(key)] = value
 		}
