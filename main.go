@@ -36,7 +36,14 @@ func main() {
 
 	// init tcp server and database
 	tcpServer := tcp.NewServer(fmt.Sprintf("%s:%d", config.Config.Addr, config.Config.Port))
-	handler := resphandler.NewHandlerWithClusterDatabase() // resphandler.NewHandlerWithDatabase()
+	var handler *resphandler.Handler
+	if config.Config.Self != "" && len(config.Config.Peers) > 0 {
+		handler = resphandler.NewHandlerWithClusterDatabase()
+		zap.S().Info("cluster mode")
+	} else {
+		handler = resphandler.NewHandlerWithDatabase()
+		zap.S().Info("stand alone mode")
+	}
 	if err = tcpServer.ListenAndServeWithSignal(handler); err != nil {
 		zap.S().Fatalf("cannot init tcp server")
 	}

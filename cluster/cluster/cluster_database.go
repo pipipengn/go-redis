@@ -12,7 +12,9 @@ import (
 	respinterface "go-redis/resp/interface"
 	"go-redis/resp/reply"
 	"go-redis/utils/cmdconv"
+	"go.uber.org/zap"
 	"strconv"
+	"strings"
 )
 
 type Database struct {
@@ -42,19 +44,27 @@ func NewDatabase() *Database {
 	return cluster
 }
 
-func (d *Database) Exec(client respinterface.Connection, args [][]byte) respinterface.Reply {
-	//TODO implement me
-	panic("implement me")
+func (d *Database) Exec(client respinterface.Connection, args [][]byte) (result respinterface.Reply) {
+	defer func() {
+		if err := recover(); err != nil {
+			zap.S().Error(err)
+			result = reply.NewUnknowErrReply()
+		}
+	}()
+	action := strings.ToLower(string(args[0]))
+	relayFunc, ok := router[action]
+	if !ok {
+		return reply.NewErrReply("cmd not exists")
+	}
+	return relayFunc(d, client, args)
 }
 
 func (d *Database) Close() {
-	//TODO implement me
-	panic("implement me")
+	d.databaseCore.Close()
 }
 
 func (d *Database) AfterClientClose(client respinterface.Connection) {
-	//TODO implement me
-	panic("implement me")
+	d.databaseCore.AfterClientClose(client)
 }
 
 // Communication ================================================================================

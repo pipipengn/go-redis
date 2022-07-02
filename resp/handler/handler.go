@@ -16,14 +16,6 @@ import (
 	"sync"
 )
 
-// ================================================================================
-
-//type DatabaseInterface interface {
-//	Exec(client respinterface.Connection, args [][]byte) respinterface.Reply
-//	Close()
-//	AfterClientClose(client respinterface.Connection)
-//}
-
 type Handler struct {
 	activeConn sync.Map
 	closing    atomic.Bool
