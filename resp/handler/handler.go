@@ -2,6 +2,7 @@ package resphandler
 
 import (
 	"context"
+	"go-redis/cluster/cluster"
 	"go-redis/core/database"
 	idatabase "go-redis/core/database/interface"
 	"go-redis/resp/connection"
@@ -26,11 +27,15 @@ import (
 type Handler struct {
 	activeConn sync.Map
 	closing    atomic.Bool
-	database   idatabase.Face
+	database   idatabase.Interface
 }
 
 func NewHandlerWithDatabase() *Handler {
 	return &Handler{database: database.New()}
+}
+
+func NewHandlerWithClusterDatabase() *Handler {
+	return &Handler{database: cluster.NewDatabase()}
 }
 
 func (h *Handler) Handle(ctx context.Context, conn net.Conn) {

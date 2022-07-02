@@ -36,7 +36,7 @@ func main() {
 
 	// init tcp server and database
 	tcpServer := tcp.NewServer(fmt.Sprintf("%s:%d", config.Config.Addr, config.Config.Port))
-	handler := resphandler.NewHandlerWithDatabase()
+	handler := resphandler.NewHandlerWithClusterDatabase() // resphandler.NewHandlerWithDatabase()
 	if err = tcpServer.ListenAndServeWithSignal(handler); err != nil {
 		zap.S().Fatalf("cannot init tcp server")
 	}

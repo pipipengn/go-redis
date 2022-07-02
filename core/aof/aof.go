@@ -21,14 +21,14 @@ type dataStream struct {
 }
 
 type Handler struct {
-	database    idatabase.Face
+	database    idatabase.Interface
 	aofChan     chan *dataStream
 	aofFile     *os.File
 	aofFileName string
 	currentDB   int
 }
 
-func NewHandler(database idatabase.Face) (*Handler, error) {
+func NewHandler(database idatabase.Interface) (*Handler, error) {
 	handler := &Handler{
 		database:    database,
 		aofFileName: config.Config.AppendFilename,

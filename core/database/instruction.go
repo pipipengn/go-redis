@@ -6,7 +6,25 @@ import (
 	"go-redis/resp/reply"
 	"go-redis/utils/cmdconv"
 	"go-redis/utils/wildcard"
+	"strings"
 )
+
+var cmdTable = make(map[string]*command)
+
+type ExecFunc func(db *DB, args [][]byte) respinterface.Reply
+
+type command struct {
+	executor ExecFunc
+	argNum   int
+}
+
+func RegisterCommand(name string, executor ExecFunc, argNum int) {
+	name = strings.ToLower(name)
+	cmdTable[name] = &command{
+		executor: executor,
+		argNum:   argNum,
+	}
+}
 
 // Ping ping pong
 func Ping(db *DB, args [][]byte) respinterface.Reply {

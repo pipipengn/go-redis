@@ -7,23 +7,6 @@ import (
 	"strings"
 )
 
-var cmdTable = make(map[string]*command)
-
-type command struct {
-	executor ExecFunc
-	argNum   int
-}
-
-func RegisterCommand(name string, executor ExecFunc, argNum int) {
-	name = strings.ToLower(name)
-	cmdTable[name] = &command{
-		executor: executor,
-		argNum:   argNum,
-	}
-}
-
-// ========================================================================================
-
 type DB struct {
 	index      int
 	dict       dict.Interface
@@ -36,8 +19,6 @@ func NewDB(dict dict.Interface) *DB {
 		addAofFunc: func([][]byte) {},
 	}
 }
-
-type ExecFunc func(db *DB, args [][]byte) respinterface.Reply
 
 func (db *DB) Exec(client respinterface.Connection, cmd [][]byte) respinterface.Reply {
 	action := strings.ToLower(string(cmd[0]))
