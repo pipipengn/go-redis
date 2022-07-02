@@ -18,6 +18,10 @@ func New(conn net.Conn) *Connection {
 	return &Connection{conn: conn}
 }
 
+func NewEmpty() *Connection {
+	return &Connection{}
+}
+
 func (c *Connection) RemoteAddr() net.Addr {
 	return c.conn.RemoteAddr()
 }

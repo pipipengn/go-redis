@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"go-redis/config"
-	"go-redis/core/database"
 	resphandler "go-redis/resp/handler"
 	"go-redis/tcp"
 	"go.uber.org/zap"
@@ -11,13 +10,13 @@ import (
 	"os"
 )
 
-const configFile = "redis.conf"
+const configFile = "./redis.conf"
 
 var defaultConfig = &config.ServerConfig{Addr: "0.0.0.0", Port: 6379}
 
 func fileExists(filename string) bool {
 	info, err := os.Stat(filename)
-	return err != nil && !info.IsDir()
+	return err == nil && !info.IsDir()
 }
 
 func main() {
@@ -37,9 +36,7 @@ func main() {
 
 	// init tcp server and database
 	tcpServer := tcp.NewServer(fmt.Sprintf("%s:%d", config.Config.Addr, config.Config.Port))
-	handler := resphandler.NewHandlerWithDatabase(&resphandler.Config{
-		Database: database.New(),
-	})
+	handler := resphandler.NewHandlerWithDatabase()
 	if err = tcpServer.ListenAndServeWithSignal(handler); err != nil {
 		zap.S().Fatalf("cannot init tcp server")
 	}

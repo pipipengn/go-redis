@@ -2,6 +2,7 @@ package database
 
 import (
 	"go-redis/config"
+	"go-redis/core/aof"
 	"go-redis/core/dict"
 	respinterface "go-redis/resp/interface"
 	"go-redis/resp/reply"
@@ -11,7 +12,8 @@ import (
 )
 
 type Database struct {
-	dbSet []*DB
+	dbSet      []*DB
+	aofHandler *aof.Handler
 }
 
 func New() *Database {
@@ -24,7 +26,23 @@ func New() *Database {
 		db.index = i
 		dbs[i] = db
 	}
-	return &Database{dbSet: dbs}
+	database := &Database{dbSet: dbs}
+	if config.Config.AppendOnly {
+		aofHandler, err := aof.NewHandler(database)
+		if err != nil {
+			zap.S().Fatalf("cannot init aof: %v", zap.Error(err))
+		}
+		database.aofHandler = aofHandler
+
+		for _, db := range database.dbSet {
+			db2 := db
+			db2.addAofFunc = func(cmd [][]byte) {
+				database.aofHandler.AddAof(db2.index, cmd)
+			}
+		}
+	}
+
+	return database
 }
 
 // Exec set k v / get k / select 1

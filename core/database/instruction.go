@@ -4,6 +4,7 @@ import (
 	"go-redis/core/dict"
 	respinterface "go-redis/resp/interface"
 	"go-redis/resp/reply"
+	"go-redis/utils/cmdconv"
 	"go-redis/utils/wildcard"
 )
 
@@ -19,6 +20,9 @@ func ExecDel(db *DB, args [][]byte) respinterface.Reply {
 		keys[i] = string(v)
 	}
 	rowAffected := db.Removes(keys...)
+	if rowAffected > 0 {
+		db.addAofFunc(cmdconv.ToCmdLineArgs("del", args))
+	}
 	return reply.NewIntReply(rowAffected)
 }
 
@@ -34,9 +38,10 @@ func ExecExists(db *DB, args [][]byte) respinterface.Reply {
 	return reply.NewIntReply(result)
 }
 
-// ExecFlushDB flush core
+// ExecFlushDB flushdb
 func ExecFlushDB(db *DB, args [][]byte) respinterface.Reply {
 	db.Flush()
+	db.addAofFunc(cmdconv.ToCmdLineArgs("flushdb", args))
 	return reply.NewOkReply()
 }
 
@@ -64,6 +69,7 @@ func ExecRename(db *DB, args [][]byte) respinterface.Reply {
 	}
 	db.SetEntity(key2, entity)
 	db.Remove(key1)
+	db.addAofFunc(cmdconv.ToCmdLineArgs("rename", args))
 	return reply.NewOkReply()
 }
 
@@ -79,6 +85,7 @@ func ExecRenameNx(db *DB, args [][]byte) respinterface.Reply {
 	if rowAffected == 1 {
 		db.Remove(key1)
 	}
+	db.addAofFunc(cmdconv.ToCmdLineArgs("renamenx", args))
 	return reply.NewIntReply(rowAffected)
 }
 
@@ -110,6 +117,7 @@ func ExecSet(db *DB, args [][]byte) respinterface.Reply {
 	key := string(args[0])
 	val := args[1]
 	db.SetEntity(key, &dict.DataEntity{Data: val})
+	db.addAofFunc(cmdconv.ToCmdLineArgs("set", args))
 	return reply.NewOkReply()
 }
 
@@ -118,6 +126,7 @@ func ExecSetNx(db *DB, args [][]byte) respinterface.Reply {
 	key := string(args[0])
 	val := args[1]
 	rowAffected := db.SetIfAbsent(key, &dict.DataEntity{Data: val})
+	db.addAofFunc(cmdconv.ToCmdLineArgs("setnx", args))
 	return reply.NewIntReply(rowAffected)
 }
 
@@ -127,6 +136,7 @@ func ExecGetSet(db *DB, args [][]byte) respinterface.Reply {
 	val := args[1]
 	entity, exists := db.GetEntity(key)
 	db.SetEntity(key, &dict.DataEntity{Data: val})
+	db.addAofFunc(cmdconv.ToCmdLineArgs("getset", args))
 	if !exists {
 		return reply.NewEmptyBulkReply()
 	}

@@ -25,12 +25,16 @@ func RegisterCommand(name string, executor ExecFunc, argNum int) {
 // ========================================================================================
 
 type DB struct {
-	index int
-	dict  dict.Interface
+	index      int
+	dict       dict.Interface
+	addAofFunc func([][]byte)
 }
 
 func NewDB(dict dict.Interface) *DB {
-	return &DB{dict: dict}
+	return &DB{
+		dict:       dict,
+		addAofFunc: func([][]byte) {},
+	}
 }
 
 type ExecFunc func(db *DB, args [][]byte) respinterface.Reply

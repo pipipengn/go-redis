@@ -2,8 +2,9 @@ package resphandler
 
 import (
 	"context"
+	"go-redis/core/database"
+	idatabase "go-redis/core/database/interface"
 	"go-redis/resp/connection"
-	respinterface "go-redis/resp/interface"
 	"go-redis/resp/parser"
 	"go-redis/resp/reply"
 	"go-redis/utils/sync/atomic"
@@ -16,24 +17,20 @@ import (
 
 // ================================================================================
 
-type DatabaseInterface interface {
-	Exec(client respinterface.Connection, args [][]byte) respinterface.Reply
-	Close()
-	AfterClientClose(client respinterface.Connection)
-}
-
-type Config struct {
-	Database DatabaseInterface
-}
+//type DatabaseInterface interface {
+//	Exec(client respinterface.Connection, args [][]byte) respinterface.Reply
+//	Close()
+//	AfterClientClose(client respinterface.Connection)
+//}
 
 type Handler struct {
 	activeConn sync.Map
 	closing    atomic.Bool
-	database   DatabaseInterface
+	database   idatabase.Face
 }
 
-func NewHandlerWithDatabase(config *Config) *Handler {
-	return &Handler{database: config.Database}
+func NewHandlerWithDatabase() *Handler {
+	return &Handler{database: database.New()}
 }
 
 func (h *Handler) Handle(ctx context.Context, conn net.Conn) {
