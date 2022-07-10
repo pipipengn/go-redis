@@ -45,6 +45,7 @@ func (h *Handler) Handle(ctx context.Context, conn net.Conn) {
 		if stream.Err != nil {
 			if stream.Err == io.EOF || stream.Err == io.ErrUnexpectedEOF ||
 				strings.Contains(stream.Err.Error(), "use of closed network connection") {
+
 				h.closeClient(client)
 				zap.S().Infof("connection closed: %s", client.RemoteAddr().String())
 				return

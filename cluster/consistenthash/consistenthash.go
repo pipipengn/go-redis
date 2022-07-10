@@ -41,11 +41,11 @@ func (m *NodeMap) AddNodes(nodes ...string) {
 	sort.Ints(m.nodeHashs)
 }
 
-func (m *NodeMap) PickNode(node string) string {
+func (m *NodeMap) PickNode(key string) string {
 	if m.IsEmpty() {
 		return ""
 	}
-	hash := int(m.hashFunc([]byte(node)))
+	hash := int(m.hashFunc([]byte(key)))
 	idx := sort.Search(len(m.nodeHashs), func(i int) bool {
 		return m.nodeHashs[i] >= hash
 	})
